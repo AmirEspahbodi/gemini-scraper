@@ -20,15 +20,24 @@ class Orchestrator:
         handler = GeminiTabHandler(page, worker_id)
         
         await handler.initialize()
+        print("1"*10)
         
         while not self.queue.empty():
+            print("2"*10)
+            
             task: PromptTask = await self.queue.get()
+            
+            print("3"*10)
             
             # Enable thinking mode (optional/per prompt)
             await handler.enable_thinking_mode()
             
+            print("4"*10)
+            
             # Process
             result = await handler.process_prompt(task)
+            
+            print("5"*10)
             
             # Store Result
             self.results[task.unique_id] = result.output
