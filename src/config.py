@@ -2,13 +2,16 @@ import os
 
 class Config:
     CDP_URL = "http://localhost:9222"
-    CONCURRENCY_LIMIT = 1
+    CONCURRENCY_LIMIT = 3
     OUTPUT_FILE = "finall_result.json"
     BASE_URL = "https://gemini.google.com/app"
 
     # --- INPUT SELECTORS ---
     # Robust selector for the input box
     SELECTOR_TEXT_AREA = "div[contenteditable='true'][role='textbox']"
+    
+    # --- Expand Menue
+    EXPAND_MENUE_SELECTOR = "button[aria-label='Main menu']"
     
     # --- TEMPORARY CHAT SELECTORS ---
     # The 'three dots' menu at the top right of the chat area

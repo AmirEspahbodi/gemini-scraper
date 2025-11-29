@@ -13,10 +13,21 @@ class GeminiTabHandler:
         """Initial startup: Go to URL and enable temp chat."""
         try:
             await self.page.goto(Config.BASE_URL)
+            await self.expand_menu()
             await self.ensure_temporary_chat()
             logger.info(f"[Worker {self.worker_id}] Tab initialized with Temporary Chat.")
         except Exception as e:
             logger.error(f"[Worker {self.worker_id}] Init failed: {e}")
+
+    async def expand_menu(self):
+        """Expands the side menu to access more options."""
+        try:
+            menu_button = self.page.locator(Config.EXPAND_MENUE_SELECTOR)
+            await menu_button.wait_for(state="visible")
+            await menu_button.click()
+            logger.debug(f"[Worker {self.worker_id}] Side menu expanded.")
+        except Exception as e:
+            logger.error(f"[Worker {self.worker_id}] Failed to expand menu: {e}")
 
     async def ensure_temporary_chat(self):
         """
@@ -103,6 +114,7 @@ class GeminiTabHandler:
             # Reloading the page is the cleanest way to ensure a fresh state
             # Then we re-run the ensure_temporary_chat logic
             await self.page.goto(Config.BASE_URL)
+            await self.expand_menu()
             await self.ensure_temporary_chat()
         except Exception as e:
             logger.error(f"[Worker {self.worker_id}] Failed to reset chat: {e}")
