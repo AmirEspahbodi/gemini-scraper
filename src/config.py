@@ -2,7 +2,7 @@ import os
 
 class Config:
     CDP_URL = "http://localhost:9222"
-    CONCURRENCY_LIMIT = 3
+    CONCURRENCY_LIMIT = 1
     OUTPUT_FILE = "finall_result.json"
     BASE_URL = "https://gemini.google.com/app"
 

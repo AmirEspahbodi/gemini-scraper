@@ -1,7 +1,7 @@
 import asyncio
 import json
-import aiofiles  # Optional, but standard open() is fine for small files. We use standard here for simplicity.
-from typing import List, Dict
+import os
+from typing import List, Dict, Set
 from loguru import logger
 from src.domain import PromptTask
 from src.browser_core import BrowserCore
@@ -15,35 +15,54 @@ class Orchestrator:
         self.browser_core = BrowserCore()
         self.file_lock = asyncio.Lock()
 
-    async def _initialize_file(self):
-        """Creates the file with an empty JSON list []"""
-        logger.info(f"Initializing {Config.OUTPUT_FILE}...")
-        try:
+    async def _get_existing_completed_ids(self) -> Set[str]:
+        """
+        Reads the output file to find which IDs have already been processed.
+        Returns a set of IDs to allow O(1) lookup.
+        """
+        if not os.path.exists(Config.OUTPUT_FILE):
+            # If file doesn't exist, create it as an empty list and return empty set
+            logger.info(f"{Config.OUTPUT_FILE} not found. Creating new file.")
             with open(Config.OUTPUT_FILE, 'w', encoding='utf-8') as f:
                 json.dump([], f)
-        except Exception as e:
-            logger.error(f"Failed to init file: {e}")
-            raise
+            return set()
+
+        try:
+            with open(Config.OUTPUT_FILE, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                # Handle case where file is empty or not a list
+                if not isinstance(data, list):
+                    return set()
+                
+                # Extract IDs
+                existing_ids = {item.get("prompt_id") for item in data if "prompt_id" in item}
+                logger.info(f"Found {len(existing_ids)} completed prompts in {Config.OUTPUT_FILE}.")
+                return existing_ids
+        except json.JSONDecodeError:
+            logger.warning(f"{Config.OUTPUT_FILE} is corrupted or empty. Starting fresh.")
+            with open(Config.OUTPUT_FILE, 'w', encoding='utf-8') as f:
+                json.dump([], f)
+            return set()
 
     async def _append_result_to_file(self, result_entry: Dict):
         """
-        Safely reads the current list, appends new data, and rewrites the file.
-        This uses a Lock to ensure no two workers write at the same time.
+        Thread-safe append. Reads the file, adds item, writes back.
         """
         async with self.file_lock:
             try:
-                # 1. Read existing data
                 current_data = []
-                try:
+                # Read
+                if os.path.exists(Config.OUTPUT_FILE):
                     with open(Config.OUTPUT_FILE, 'r', encoding='utf-8') as f:
-                        current_data = json.load(f)
-                except (FileNotFoundError, json.JSONDecodeError):
-                    current_data = []
-
-                # 2. Append new result
+                        try:
+                            current_data = json.load(f)
+                        except json.JSONDecodeError:
+                            current_data = []
+                
+                # Append
                 current_data.append(result_entry)
 
-                # 3. Write back to file
+                # Write
                 with open(Config.OUTPUT_FILE, 'w', encoding='utf-8') as f:
                     json.dump(current_data, f, ensure_ascii=False, indent=4)
                     
@@ -55,59 +74,64 @@ class Orchestrator:
         page = await self.browser_core.context.new_page()
         handler = GeminiTabHandler(page, worker_id)
         
-        # Initial setup (open page, enable temp chat)
         await handler.initialize()
         
         while not self.queue.empty():
             task: PromptTask = await self.queue.get()
             
-            # Enable thinking mode (optional/per prompt)
-            await handler.enable_thinking_mode()
+            # Double check: In rare race conditions or restarts, we might want to check
+            # if the ID was just written by another worker (optional, but safe)
+            # For now, we trust the queue filter.
             
-            # Process the prompt
             result = await handler.process_prompt(task)
             
-            # Formate data as requested
             output_entry = {
                 "prompt_id": result.unique_id,
                 "prompt_output": result.output
             }
             
-            # WRITE IMMEDIATELY
             await self._append_result_to_file(output_entry)
             logger.success(f"Saved result for ID {task.unique_id}")
             
-            # Reset chat for next prompt (inc. temp mode)
             await handler.start_new_chat()
-            
             self.queue.task_done()
         
         await page.close()
 
     async def run(self):
-        # 1. Initialize the empty JSON file
-        await self._initialize_file()
+        # 1. Check what is already done
+        completed_ids = await self._get_existing_completed_ids()
 
-        # 2. Populate Queue
-        for p in self.raw_prompts:
+        # 2. Filter prompts (Exclude ones that are in completed_ids)
+        pending_prompts = [p for p in self.raw_prompts if p['id'] not in completed_ids]
+
+        if not pending_prompts:
+            logger.success("All prompts are already scraped! Exiting.")
+            return
+
+        logger.info(f"Resuming scrape. {len(pending_prompts)} prompts remaining out of {len(self.raw_prompts)} total.")
+
+        # 3. Populate Queue with ONLY pending prompts
+        for p in pending_prompts:
             await self.queue.put(PromptTask(unique_id=p['id'], text=p['prompt']))
 
-        # 3. Connect Browser
+        # 4. Connect Browser
         await self.browser_core.connect()
 
-        # 4. Spawn Workers
+        # 5. Spawn Workers
         workers = []
-        num_workers = min(Config.CONCURRENCY_LIMIT, len(self.raw_prompts))
+        # Don't open more tabs than pending prompts
+        num_workers = min(Config.CONCURRENCY_LIMIT, len(pending_prompts))
         
         logger.info(f"Spawning {num_workers} worker tabs...")
         
         for i in range(num_workers):
             workers.append(asyncio.create_task(self._worker(i+1)))
 
-        # 5. Wait for completion
+        # 6. Wait for completion
         await self.queue.join()
         await asyncio.gather(*workers)
         
-        # 6. Stop Playwright (but don't close Chrome)
+        # 7. Close Connection
         await self.browser_core.close()
-        logger.success("All tasks completed.")
+        logger.success("Batch completed.")
