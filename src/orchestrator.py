@@ -82,7 +82,13 @@ class Orchestrator:
             # Double check: In rare race conditions or restarts, we might want to check
             # if the ID was just written by another worker (optional, but safe)
             # For now, we trust the queue filter.
-            
+            try:
+                await handler.expand_menu()
+                await handler.ensure_temporary_chat()
+                logger.info(f"[Worker {handler.worker_id}] Tab initialized with Temporary Chat.")
+            except Exception as e:
+                logger.error(f"[Worker {handler.worker_id}] Init failed: {e}")
+                
             result = await handler.process_prompt(task)
             
             output_entry = {
