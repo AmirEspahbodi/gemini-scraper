@@ -1,26 +1,45 @@
 import asyncio
+import json
+import os
+import sys
+from loguru import logger
 from src.orchestrator import Orchestrator
 
-# Sample Prompts
-PROMPT_LIST = [
-    {"id": "101", "prompt": "Explain Quantum Entanglement simply."},
-    {"id": "102", "prompt": "Write a python function to calculate fibonacci."},
-    {"id": "103", "prompt": "What is the capital of France?"},
-    {"id": "104", "prompt": "Summarize the history of the internet."},
-    {"id": "105", "prompt": "Give me a recipe for Lasagna."},
-    {"id": "106", "prompt": "Explain the concept of Dependency Injection."},
-    {"id": "107", "prompt": "Write a Haiku about coding."},
-]
+# File path for prompts
+PROMPTS_FILE = "prompts.json"
+
+def load_prompts(file_path: str):
+    if not os.path.exists(file_path):
+        logger.error(f"File '{file_path}' not found. Please create it.")
+        sys.exit(1)
+
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            
+            if not isinstance(data, list):
+                logger.error(f"Invalid format in '{file_path}'. Expected a JSON list.")
+                sys.exit(1)
+                
+            logger.info(f"Successfully loaded {len(data)} prompts from {file_path}.")
+            return data
+
+    except json.JSONDecodeError:
+        logger.error(f"Could not decode JSON in '{file_path}'. Check syntax.")
+        sys.exit(1)
+    except Exception as e:
+        logger.error(f"Unexpected error reading prompts: {e}")
+        sys.exit(1)
 
 async def main():
-    # Initialize Orchestrator with prompt list
+    PROMPT_LIST = load_prompts(PROMPTS_FILE)
+    
     orchestrator = Orchestrator(PROMPT_LIST)
     
-    # Run the scraper
     await orchestrator.run()
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("Scraper stopped by user.")
+        logger.warning("Scraper stopped by user.")

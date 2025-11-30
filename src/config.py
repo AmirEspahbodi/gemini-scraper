@@ -2,8 +2,8 @@ import os
 
 class Config:
     CDP_URL = "http://localhost:9222"
-    CONCURRENCY_LIMIT = 4
-    OUTPUT_FILE = "finall_result.json"
+    CONCURRENCY_LIMIT = 5
+    OUTPUT_FILE = "initial_prompts_outputs.json"
     BASE_URL = "https://gemini.google.com/app"
 
     # --- INPUT SELECTORS ---

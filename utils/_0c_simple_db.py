@@ -57,7 +57,7 @@ for target in target_conditions:
     results[key] = key_result
 
 # 5. Save to JSON
-with open('filtered_dataset.json', 'w') as f:
+with open('initial_filtered_dataset.json', 'w') as f:
     json.dump(results, f, indent=4)
 
 print("Processing complete. Rows with empty targets were excluded.")

@@ -194,5 +194,18 @@ pyrightconfig.json
 
 # End of https://www.toptal.com/developers/gitignore/api/python,visualstudiocode
 **/AUTALIC.csv
-**/filtered_dataset.json
+**/initial_filtered_dataset.json
 **/finall_result.json
+**/initial_prompt.txt
+**/prompts.json
+**/initial_prompts_outputs.json
+**/ready_prompts_outputs.json
+**/expert_finall_result.json
+**/site_finall_result.json
+initial_filtered_dataset.json
+initial_prompt.txt
+prompts.json
+initial_prompts_outputs.json
+ready_prompts_outputs.json
+expert_finall_result.json
+site_finall_result.json
