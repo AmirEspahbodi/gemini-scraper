@@ -40,7 +40,7 @@ for target in target_conditions:
     filtered_rows = df_clean[mask]
     
     # Get top 5
-    selected_rows = filtered_rows.head(5).to_dict(orient='records')
+    selected_rows = filtered_rows.head(2).to_dict(orient='records')
     
     key = f"1:{n_1}, -1:{n_neg_1}, 0:{n_0}"
     key_result = []
@@ -57,7 +57,7 @@ for target in target_conditions:
     results[key] = key_result
 
 # 5. Save to JSON
-with open('initial_filtered_dataset.json', 'w') as f:
+with open('_0initial_filtered_dataset.json', 'w') as f:
     json.dump(results, f, indent=4)
 
 print("Processing complete. Rows with empty targets were excluded.")

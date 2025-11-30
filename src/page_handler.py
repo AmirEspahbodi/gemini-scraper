@@ -137,8 +137,13 @@ class GeminiTabHandler:
             logger.debug(f"[Worker {self.worker_id}] Ensuring Thinking Mode is active...")
             
             # Example logic (Commented out as it's fragile without specific DOM snapshot)
-            # await self.page.click(Config.SELECTOR_MODEL_DROPDOWN)
-            # await self.page.click(Config.SELECTOR_THINKING_MODEL_OPTION)
+            model_selector = self.page.locator(Config.SELECTOR_MODEL_DROPDOWN)
+            await model_selector.wait_for(state="visible")
+            await model_selector.click()
+            
+            model_mode_selector = self.page.locator(Config.SELECTOR_THINKING_MODEL_OPTION)
+            await model_mode_selector.wait_for(state="visible")
+            await model_mode_selector.click()
             
             # For now, we assume the user sets the model once or we send a precise click
             await asyncio.sleep(0.5) 

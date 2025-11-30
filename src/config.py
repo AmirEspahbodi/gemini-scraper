@@ -3,7 +3,7 @@ import os
 class Config:
     CDP_URL = "http://localhost:9222"
     CONCURRENCY_LIMIT = 5
-    OUTPUT_FILE = "initial_prompts_outputs.json"
+    OUTPUT_FILE = "_2initial_prompts_outputs.json"
     BASE_URL = "https://gemini.google.com/app"
 
     # --- INPUT SELECTORS ---
@@ -12,6 +12,10 @@ class Config:
     # --- Expand Menue
     HISTORY_SEARCH_BUTTON = "mat-icon[data-mat-icon-name='search']"
     EXPAND_MENUE_SELECTOR = "mat-icon[data-mat-icon-name='menu']"
+    
+    # --- Enable Think Mode ---
+    SELECTOR_MODEL_DROPDOWN = "mat-icon[data-mat-icon-name='keyboard_arrow_down']"
+    SELECTOR_THINKING_MODEL_OPTION = "button[data-test-id='bard-mode-option-thinkingwith3pro']"
     
     # --- TEMPORARY CHAT SELECTORS ---
     # The 'three dots' menu at the top right of the chat area

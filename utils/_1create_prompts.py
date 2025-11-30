@@ -5,7 +5,7 @@ from typing import List, Dict, Any
 prompts: List[Dict[str, Any]] = []
 
 # read initial prompt (plain text)
-with open('initial_prompt.txt', 'r', encoding='utf-8') as f:
+with open('_0initial_prompt.txt', 'r', encoding='utf-8') as f:
     initial_prompt: str = f.read()
 
 # load the complex json and flatten its list values into filtered_samples
@@ -55,7 +55,7 @@ for sample in filtered_samples:
     prompts.append(entry)
 
 # Optional: write resulting prompts to a JSON file for inspection (comment out if you don't want this)
-with open('prompts.json', 'w', encoding='utf-8') as out_f:
+with open('_1prompts.json', 'w', encoding='utf-8') as out_f:
     json.dump(prompts, out_f, ensure_ascii=False, indent=2)
 
 # summary output

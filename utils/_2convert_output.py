@@ -71,8 +71,8 @@ def save_json_data(data, file_path):
 
 
 # Define the file paths
-input_file_name = 'initial_prompts_outputs.json'
-output_file_name = 'ready_prompts_outputs.json'
+input_file_name = '_2initial_prompts_outputs.json'
+output_file_name = '_3ready_prompts_outputs.json'
 
 # Execute the parsing function
 final_data = parse_nested_json(input_file_name)
