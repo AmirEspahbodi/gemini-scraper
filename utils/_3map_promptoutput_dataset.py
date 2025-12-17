@@ -51,11 +51,11 @@ def map_and_save_data(ready_prompts_outputs: List[Dict], initial_data_by_key: Di
     Performs the mapping, updates the data, and saves it to two files.
     """
     # Create a dictionary for efficient lookup from 'ready_prompts_outputs'
-    # Key: prompt_id, Value: prompt_output object
-    prompt_output_map = {}
+    # Key: key, Value: value object
+    value_map = {}
     for item in ready_prompts_outputs:
-        if 'prompt_id' in item and 'prompt_output' in item:
-            prompt_output_map[item['prompt_id']] = item['prompt_output']
+        if 'key' in item and 'value' in item:
+            value_map[item['key']] = item['value']
 
     # Initialize the lists for the two output files
     final_result_list: List[Dict] = []
@@ -70,18 +70,22 @@ def map_and_save_data(ready_prompts_outputs: List[Dict], initial_data_by_key: Di
         for item in items:
             item_id = item.get('id')
             
-            if item_id in prompt_output_map:
-                # Get the prompt_output for the matching ID
-                output = prompt_output_map[item_id]
+            if item_id in value_map:
+                # Get the value for the matching ID
+                output = value_map[item_id]
+                if not isinstance(output, dict):
+                    print(f"Warning: Expected a dictionary for value, got {type(output)} for ID {item_id}")
+                    continue
                 
                 # Perform the required mapping (Source -> Destination)
-                # prompt_output.justification_reasoning -> llm_justification
+                # value.justification_reasoning -> llm_justification
+                
                 item['llm_justification'] = output.get('justification_reasoning', item.get('llm_justification'))
                 
-                # prompt_output.evidence_quote -> llm_evidence_quote
+                # value.evidence_quote -> llm_evidence_quote
                 item['llm_evidence_quote'] = output.get('evidence_quote', item.get('llm_evidence_quote'))
                 
-                # prompt_output.principle_id -> principle_id
+                # value.principle_id -> principle_id
                 item['principle_id'] = output.get('principle_id', item.get('principle_id'))
 
                 mapped_count += 1

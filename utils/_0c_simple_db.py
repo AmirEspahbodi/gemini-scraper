@@ -7,54 +7,58 @@ df = pd.read_csv('utils/AUTALIC.csv')
 
 # 2. Filter out rows where 'target' is empty
 # This removes NaN values AND empty strings
-df_clean = df[df['target'].notna() & (df['target'] != "")]
 
-# 3. Define the target conditions based on counts of [1, -1, 0]
-target_conditions = [
-    (3, 0, 0), # All 1s
-    (0, 3, 0), # All -1s
-    (0, 0, 3), # All 0s
-    (2, 1, 0), # Two 1s, one -1
-    (1, 2, 0), # Two -1s, one 1
-    (2, 0, 1), # Two 1s, one 0
-    (1, 0, 2), # Two 0s, one 1
-    (0, 2, 1), # Two -1s, one 0
-    (0, 1, 2)  # Two 0s, one -1
-]
-
-results = {}
+results = []
 counter = 0
-# 4. Iterate and collect rows
-for target in target_conditions:
-    n_1, n_neg_1, n_0 = target
-    
-    # Helper to check score distribution
-    def check_row_scores(row):
-        scores = [row['A1_Score'], row['A2_Score'], row['A3_Score']]
-        return (scores.count(1) == n_1 and 
-                scores.count(-1) == n_neg_1 and 
-                scores.count(0) == n_0)
 
-    # Apply score filter on the CLEANED dataframe
-    mask = df_clean.apply(check_row_scores, axis=1)
-    filtered_rows = df_clean[mask]
-    
-    # Get top 5
-    selected_rows = filtered_rows.head(2).to_dict(orient='records')
-    
-    key = f"1:{n_1}, -1:{n_neg_1}, 0:{n_0}"
-    key_result = []
-    for i in selected_rows:
-        key_result.append({
-            "id": f"P{counter}",
-            **i,
-            "principle_id":"",
-            "llm_justification":"",
-            "llm_evidence_quote":"",
-            "expert_opinion":"",
-        })
-        counter+=1
-    results[key] = key_result
+import pandas as pd
+from typing import Any
+
+def _replace_in_struct(x: Any) -> Any:
+    if isinstance(x, dict):
+        return {k: _replace_in_struct(v) if isinstance(v, (dict, list, tuple)) else ('' if pd.isna(v) else v)
+                for k, v in x.items()}
+
+    if isinstance(x, list):
+        return [_replace_in_struct(v) if isinstance(v, (dict, list, tuple)) else ('' if pd.isna(v) else v)
+                for v in x]
+    if isinstance(x, tuple):
+        return tuple(_replace_in_struct(v) if isinstance(v, (dict, list, tuple)) else ('' if pd.isna(v) else v)
+                     for v in x)
+    return '' if pd.isna(x) else x
+
+def replace_nans_with_empty(p: Any) -> Any:
+    if isinstance(p, pd.DataFrame):
+        return p.fillna('')
+
+    if isinstance(p, pd.Series):
+        if p.apply(lambda x: isinstance(x, (dict, list, tuple))).all():
+            return p.apply(lambda x: _replace_in_struct(x) if pd.notna(x) else '')
+        else:
+            return p.fillna('')
+
+    if isinstance(p, list):
+        return [_replace_in_struct(x) for x in p]
+
+    return '' if pd.isna(p) else p
+
+
+df_clean = df[df['target'].notna() & (df['target'] != "")]
+df_clean = replace_nans_with_empty(df_clean)
+
+selected_rows = df_clean.to_dict(orient='records')
+
+for i in selected_rows:
+    i
+    results.append({
+        "id": f"P{counter}",
+        **i,
+        "principle_id":"",
+        "llm_justification":"",
+        "llm_evidence_quote":"",
+        "expert_opinion":"",
+    })
+    counter+=1
 
 # 5. Save to JSON
 with open('_0initial_filtered_dataset.json', 'w') as f:

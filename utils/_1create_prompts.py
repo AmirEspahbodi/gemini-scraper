@@ -5,23 +5,23 @@ from typing import List, Dict, Any
 prompts: List[Dict[str, Any]] = []
 
 # read initial prompt (plain text)
-with open('_0initial_prompt.txt', 'r', encoding='utf-8') as f:
+with open('_0initial_prompt_type_2.txt', 'r', encoding='utf-8') as f:
     initial_prompt: str = f.read()
 
 # load the complex json and flatten its list values into filtered_samples
-with open('initial_filtered_dataset.json', 'r', encoding='utf-8') as f:
+with open('_0initial_filtered_dataset.json', 'r', encoding='utf-8') as f:
     data = json.load(f)
 
-filtered_samples = []
-if isinstance(data, dict):
-    for v in data.values():
-        if isinstance(v, list):
-            filtered_samples.extend(v)
-        else:
-            # if some value is a single sample (not list), handle gracefully
-            filtered_samples.append(v)
-else:
-    raise ValueError("initial_filtered_dataset.json must contain a top-level dictionary")
+filtered_samples = data
+# if isinstance(data, dict):
+#     for v in data.values():
+#         if isinstance(v, list):
+#             filtered_samples.extend(v)
+#         else:
+#             # if some value is a single sample (not list), handle gracefully
+#             filtered_samples.append(v)
+# else:
+#     raise ValueError("initial_filtered_dataset.json must contain a top-level dictionary")
 
 # create prompts for each sample
 for sample in filtered_samples:
@@ -33,6 +33,10 @@ for sample in filtered_samples:
     preceding = sample.get('preceding', '') or ''
     target = sample.get('target', '') or ''
     following = sample.get('following', '') or ''
+    A1_Score = sample.get('A1_Score')
+    A2_Score = sample.get('A2_Score')
+    A3_Score = sample.get('A3_Score')
+    A_scores = f"[{A1_Score}, {A2_Score}, {A3_Score}]"
 
     # Try using str.format first (works if initial_prompt uses {preceding}, {target}, {following})
     try:
@@ -44,9 +48,11 @@ for sample in filtered_samples:
     except Exception:
         # fallback to safe manual replacement if formatting fails (e.g., braces or other placeholders exist)
         prompt_text = (initial_prompt
-                       .replace('{preceding}', preceding)
-                       .replace('{target}', target)
-                       .replace('{following}', following))
+                       .replace('{preceding_context_}', preceding)
+                       .replace('{target_sentence_}', target)
+                       .replace('{following_context_}', following)
+                       .replace('{expert_ratings_}', A_scores)
+                       )
 
     entry = {
         'id': sample_id,

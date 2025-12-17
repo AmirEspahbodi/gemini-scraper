@@ -6,7 +6,7 @@ from loguru import logger
 from src.orchestrator import Orchestrator
 
 # File path for prompts
-PROMPTS_FILE = "prompts.json"
+PROMPTS_FILE = "_1prompts.json"
 
 def load_prompts(file_path: str):
     if not os.path.exists(file_path):

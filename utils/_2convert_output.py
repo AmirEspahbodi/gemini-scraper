@@ -2,7 +2,7 @@ import json
 
 def parse_nested_json(file_path):
     """
-    Loads a JSON file containing a list of objects, where the 'prompt_output'
+    Loads a JSON file containing a list of objects, where the 'value'
     field is a JSON string. It parses this string into a dictionary for each item.
 
     Args:
@@ -28,25 +28,25 @@ def parse_nested_json(file_path):
     transformed_data = []
 
     for i, item in enumerate(data):
-        prompt_output_string = item.get("prompt_output")
+        value_string = item.get("value")
 
-        if prompt_output_string is None:
-            print(f"Warning: Item {i} is missing the 'prompt_output' field. Skipping.")
+        if value_string is None:
+            print(f"Warning: Item {i} is missing the 'value' field. Skipping.")
             transformed_data.append(item)
             continue
 
         try:
             # Convert the JSON string into a Python dictionary
-            parsed_output = json.loads(prompt_output_string)
+            parsed_output = json.loads(value_string)
 
             # Replace the string value with the actual dictionary
-            item["prompt_output"] = parsed_output
+            item["value"] = parsed_output
 
             transformed_data.append(item)
 
         except json.JSONDecodeError as e:
-            print(f"Error decoding nested JSON in item {i} (Prompt ID: {item.get('prompt_id', 'N/A')}): {e}")
-            print(f"Problematic string segment: {prompt_output_string[:100]}...") # Print first 100 chars for context
+            print(f"Error decoding nested JSON in item {i} (Prompt ID: {item.get('key', 'N/A')}): {e}")
+            print(f"Problematic string segment: {value_string[:100]}...") # Print first 100 chars for context
             transformed_data.append(item) # Keep original data if parsing failed
 
     print("\n--- Transformation Complete ---")
@@ -87,7 +87,7 @@ if final_data:
     print(json.dumps(final_data[0], indent=4))
 
     # Verify the type of the nested field
-    print(f"\nType of 'prompt_output' in the first item: {type(final_data[0]['prompt_output'])}")
+    print(f"\nType of 'value' in the first item: {type(final_data[0]['value'])}")
 
     # Show that you can now access nested fields directly
-    print(f"Accessing nested field 'is_ableist': {final_data[0]['prompt_output']['is_ableist']}")
+    print(f"Accessing nested field 'is_ableist': {final_data[0]['value']['is_ableist']}")
