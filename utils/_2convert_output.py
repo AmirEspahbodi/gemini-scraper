@@ -1,5 +1,6 @@
 import json
 
+
 def parse_nested_json(file_path):
     """
     Loads a JSON file containing a list of objects, where the 'value'
@@ -15,7 +16,7 @@ def parse_nested_json(file_path):
 
     try:
         # 1. Load the main JSON file
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
     except FileNotFoundError:
         print(f"Error: The file '{file_path}' was not found.")
@@ -26,9 +27,21 @@ def parse_nested_json(file_path):
 
     # 2. Iterate and parse the nested JSON string
     transformed_data = []
-
-    for i, item in enumerate(data):
+    bad_data = []
+    for key, item in enumerate(data):
         value_string = item.get("value")
+        if value_string.startswith(
+            "Model\ncode\nJSON\ndownload\ncontent_copy\nexpand_less\n"
+        ):
+            value_string = value_string[
+                len("Model\ncode\nJSON\ndownload\ncontent_copy\nexpand_less\n") :
+            ]
+        if value_string.startswith("Model\n\n"):
+            value_string = value_string[len("Model\n\n")]
+        if value_string.startswith("JSON\n"):
+            value_string = value_string[len("JSON\n")]
+        if value_string.endswith("\n"):
+            value_string = value_string[: len("\n")]
 
         if value_string is None:
             print(f"Warning: Item {i} is missing the 'value' field. Skipping.")
@@ -45,12 +58,17 @@ def parse_nested_json(file_path):
             transformed_data.append(item)
 
         except json.JSONDecodeError as e:
-            print(f"Error decoding nested JSON in item {i} (Prompt ID: {item.get('key', 'N/A')}): {e}")
-            print(f"Problematic string segment: {value_string[:100]}...") # Print first 100 chars for context
-            transformed_data.append(item) # Keep original data if parsing failed
+            print(
+                f"Error decoding nested JSON in item {key} (Prompt ID: {item.get('key', 'N/A')}): {e}"
+            )
+            print(
+                f"Problematic string segment: {value_string[:100]}..."
+            )  # Print first 100 chars for context
+            bad_data.append(item)
 
     print("\n--- Transformation Complete ---")
-    return transformed_data
+    return transformed_data, bad_data
+
 
 def save_json_data(data, file_path):
     """
@@ -63,7 +81,7 @@ def save_json_data(data, file_path):
     print(f"--- Saving data to {file_path} ---")
     try:
         # Use indent=4 for pretty-printing the output file
-        with open(file_path, 'w', encoding='utf-8') as f:
+        with open(file_path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=4)
         print(f"Successfully saved {len(data)} items to {file_path}")
     except IOError as e:
@@ -71,15 +89,16 @@ def save_json_data(data, file_path):
 
 
 # Define the file paths
-input_file_name = '_2initial_prompts_outputs.json'
-output_file_name = '_3ready_prompts_outputs.json'
+input_file_name = "_2initial_prompts_outputs.json"
+output_file_name = "_3ready_prompts_outputs.json"
 
 # Execute the parsing function
-final_data = parse_nested_json(input_file_name)
+final_data, bad_data = parse_nested_json(input_file_name)
 
 if final_data:
     # Save the transformed data to the new file
     save_json_data(final_data, output_file_name)
+    save_json_data(bad_data, "_3bad_prompt_outputs.json")
 
     # Print the structure of the first item to show the change
     print("\n--- Transformed Data Structure (First Item) ---")
@@ -90,4 +109,6 @@ if final_data:
     print(f"\nType of 'value' in the first item: {type(final_data[0]['value'])}")
 
     # Show that you can now access nested fields directly
-    print(f"Accessing nested field 'is_ableist': {final_data[0]['value']['is_ableist']}")
+    print(
+        f"Accessing nested field 'is_ableist': {final_data[0]['value']['is_ableist']}"
+    )
